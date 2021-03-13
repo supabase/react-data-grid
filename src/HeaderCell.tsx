@@ -58,7 +58,14 @@ export default function HeaderCell<R, SR>({
     if (event.pointerType === 'mouse' && event.buttons !== 1) {
       return;
     }
+    
     const { currentTarget } = event;
+    const { right } = currentTarget.getBoundingClientRect();
+    const offset = right - event.clientX;
+
+    if (offset > 11) { // +1px to account for the border size
+      return;
+    }
 
     function onPointerMove(event: PointerEvent) {
       if (event.pointerType === 'mouse' && event.buttons !== 1) {
@@ -66,7 +73,6 @@ export default function HeaderCell<R, SR>({
         return;
       }
       const width = event.clientX - currentTarget.getBoundingClientRect().left;
-
       if (width > 0) {
         onResize(column, width);
       }
