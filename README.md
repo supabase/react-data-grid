@@ -5,18 +5,18 @@
 [![size-badge]][size-url]
 [![ci-badge]][ci-url]
 
-[npm-badge]: https://img.shields.io/npm/v/react-data-grid
-[npm-url]: https://www.npmjs.com/package/react-data-grid
-[size-badge]: https://img.shields.io/bundlephobia/minzip/react-data-grid
-[size-url]: https://bundlephobia.com/result?p=react-data-grid
-[type-badge]: https://img.shields.io/npm/types/react-data-grid
-[ci-badge]: https://github.com/adazzle/react-data-grid/workflows/CI/badge.svg
-[ci-url]: https://github.com/adazzle/react-data-grid/actions
+[npm-badge]: https://img.shields.io/npm/v/@supabase/react-data-grid
+[npm-url]: https://www.npmjs.com/package/@supabase/react-data-grid
+[size-badge]: https://img.shields.io/bundlephobia/minzip/@supabase/react-data-grid
+[size-url]: https://bundlephobia.com/result?p=@supabase/react-data-grid
+[type-badge]: https://img.shields.io/npm/types/@supabase/react-data-grid
+[ci-badge]: https://github.com/supabase/react-data-grid/workflows/CI/badge.svg
+[ci-url]: https://github.com/supabase/react-data-grid/actions
 
 ## Install
 
 ```sh
-npm install react-data-grid
+npm install @supabase/react-data-grid
 ```
 
 react-data-grid is published as ES2019 modules, you'll probably want to transpile those down to scripts for the browsers you target using [Babel](https://babeljs.io/) and [browserslist](https://github.com/browserslist/browserslist).
@@ -124,11 +124,3 @@ function App() {
   );
 }
 ```
-
-## Documentation
-
-- [Website](https://adazzle.github.io/react-data-grid/canary/)
-  - [Source code](stories)
-- [Old website for react-data-grid v5](https://adazzle.github.io/react-data-grid/)
-- [Changelog](CHANGELOG.md)
-- [Contributing](CONTRIBUTING.md)
