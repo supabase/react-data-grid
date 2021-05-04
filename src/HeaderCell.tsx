@@ -84,7 +84,7 @@ export default function HeaderCell<R, SR>({
       window.removeEventListener('pointermove', onPointerMove);
       window.removeEventListener('pointerup', onPointerUp);
       const width = event.clientX - currentTarget.getBoundingClientRect().left;
-      if (onResized) onResized(column, width);
+      onResized(column, width);
     }
 
     event.preventDefault();

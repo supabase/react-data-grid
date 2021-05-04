@@ -59,6 +59,7 @@ function HeaderRow<R, SR>({
         column={column}
         colSpan={colSpan}
         onResize={onColumnResize}
+        onResized={onColumnResized}
         allRowsSelected={allRowsSelected}
         onAllRowsSelectionChange={handleAllRowsSelectionChange}
         onSort={onSort}
