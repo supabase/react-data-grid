@@ -1,5 +1,5 @@
 {
-  "name": "react-data-grid",
+  "name": "@supabase/react-data-grid",
   "version": "7.0.0-canary.43",
   "license": "MIT",
   "description": "Excel-like grid component built with React, with editors, keyboard navigation, copy & paste, and the like",
@@ -38,7 +38,8 @@
     "typecheck": "tsc -p tsconfig.all.json",
     "build-storybook": "build-storybook --quiet",
     "prepublishOnly": "npm install && npm run build && tsc && api-extractor run --local --verbose",
-    "postpublish": "git push --follow-tags origin HEAD"
+    "postpublish": "git push --follow-tags origin HEAD",
+    "deploy:canary": "npm publish --tag canary --access public"
   },
   "dependencies": {
     "clsx": "^1.1.1"
@@ -105,7 +106,7 @@
     "xlsx": "^0.16.9"
   },
   "peerDependencies": {
-    "react": "^16.14 || ^17.0",
-    "react-dom": "^16.14 || ^17.0"
+    "react": "^16.14 || ^17.0.0",
+    "react-dom": "^16.14 || ^17.0.0"
   }
 }
