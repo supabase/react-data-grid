@@ -8,9 +8,9 @@
     "react-data-grid",
     "data-grid"
   ],
-  "repository": "github:adazzle/react-data-grid",
+  "repository": "github:supabase/react-data-grid",
   "bugs": {
-    "url": "https://github.com/adazzle/react-data-grid/issues"
+    "url": "https://github.com/supabase/react-data-grid/issues"
   },
   "type": "module",
   "exports": {
