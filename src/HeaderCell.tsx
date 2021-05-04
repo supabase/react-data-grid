@@ -39,6 +39,7 @@ type SharedHeaderRowProps<R, SR> = Pick<HeaderRowProps<R, SR>,
 
 export interface HeaderCellProps<R, SR> extends SharedHeaderRowProps<R, SR> {
   column: CalculatedColumn<R, SR>;
+  colSpan?: number;
   onResize: (column: CalculatedColumn<R, SR>, width: number) => void;
   onResized: (column: CalculatedColumn<R, SR>, width: number) => void;
   onAllRowsSelectionChange: (checked: boolean) => void;
@@ -46,6 +47,7 @@ export interface HeaderCellProps<R, SR> extends SharedHeaderRowProps<R, SR> {
 
 export default function HeaderCell<R, SR>({
   column,
+  colSpan,
   onResize,
   onResized,
   allRowsSelected,
@@ -129,8 +131,9 @@ export default function HeaderCell<R, SR>({
       role="columnheader"
       aria-colindex={column.idx + 1}
       aria-sort={sortColumn === column.key ? getAriaSort(sortDirection) : undefined}
+      aria-colspan={colSpan}
       className={className}
-      style={getCellStyle(column)}
+      style={getCellStyle(column, colSpan)}
       onPointerDown={column.resizable ? onPointerDown : undefined}
     >
       {getCell()}
