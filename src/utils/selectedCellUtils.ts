@@ -8,16 +8,23 @@ interface IsSelectedCellEditableOpts<R, SR> {
   isGroupRow: (row: R | GroupRow<R>) => row is GroupRow<R>;
 }
 
-export function isSelectedCellEditable<R, SR>({ selectedPosition, columns, rows, isGroupRow }: IsSelectedCellEditableOpts<R, SR>): boolean {
+export function isSelectedCellEditable<R, SR>({
+  selectedPosition,
+  columns,
+  rows,
+  isGroupRow
+}: IsSelectedCellEditableOpts<R, SR>): boolean {
   const column = columns[selectedPosition.idx];
   const row = rows[selectedPosition.rowIdx];
   return !isGroupRow(row) && isCellEditable(column, row);
 }
 
 export function isCellEditable<R, SR>(column: CalculatedColumn<R, SR>, row: R): boolean {
-  return column.editor != null
-    && !column.rowGroup
-    && (typeof column.editable === 'function' ? column.editable(row) : column.editable) !== false;
+  return (
+    column.editor != null &&
+    !column.rowGroup &&
+    (typeof column.editable === 'function' ? column.editable(row) : column.editable) !== false
+  );
 }
 
 interface GetNextSelectedCellPositionOpts<R, SR> {
@@ -55,7 +62,7 @@ export function getNextSelectedCellPosition<R, SR>({
       for (const column of colSpanColumns) {
         const colIdx = column.idx;
         if (colIdx > posIdx) break;
-        const colSpan = getColSpan<R, SR>(column, lastFrozenColumnIndex, { type: 'ROW', row });
+        const colSpan = getColSpan(column, lastFrozenColumnIndex, { type: 'ROW', row });
         if (colSpan && posIdx > colIdx && posIdx < colSpan + colIdx) {
           position.idx = colIdx + (moveRight ? colSpan : 0);
           break;
@@ -120,7 +127,13 @@ interface CanExitGridOpts<R, SR> {
   shiftKey: boolean;
 }
 
-export function canExitGrid<R, SR>({ cellNavigationMode, columns, rowsCount, selectedPosition: { rowIdx, idx }, shiftKey }: CanExitGridOpts<R, SR>): boolean {
+export function canExitGrid<R, SR>({
+  cellNavigationMode,
+  columns,
+  rowsCount,
+  selectedPosition: { rowIdx, idx },
+  shiftKey
+}: CanExitGridOpts<R, SR>): boolean {
   // When the cellNavigationMode is 'none' or 'changeRow', you can exit the grid if you're at the first or last cell of the grid
   // When the cellNavigationMode is 'loopOverRow', there is no logical exit point so you can't exit the grid
   if (cellNavigationMode === 'NONE' || cellNavigationMode === 'CHANGE_ROW') {

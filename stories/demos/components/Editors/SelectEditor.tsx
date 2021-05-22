@@ -5,29 +5,28 @@ interface SelectEditorProps {
   value: string;
   onChange: (value: string) => void;
   options: OptionsType<OptionTypeBase>;
-  rowHeight: number;
   menuPortalTarget: Element;
 }
 
-export function SelectEditor({ value, onChange, options, rowHeight, menuPortalTarget }: SelectEditorProps) {
+export function SelectEditor({ value, onChange, options, menuPortalTarget }: SelectEditorProps) {
   return (
     <Select
       autoFocus
       defaultMenuIsOpen
-      value={options.find(o => o.value === value)}
-      onChange={o => onChange(o.value)}
+      value={options.find((o) => o.value === value)}
+      onChange={(o) => onChange(o.value)}
       options={options}
       menuPortalTarget={menuPortalTarget as HTMLElement}
       styles={{
         control: (provided) => ({
           ...provided,
-          height: rowHeight - 1,
+          height: 'calc(var(--row-height) - 1px)',
           minHeight: 30,
           lineHeight: 'normal'
         }),
         dropdownIndicator: (provided) => ({
           ...provided,
-          height: rowHeight - 1
+          height: 'var(--row-height)'
         })
       }}
     />
