@@ -1,6 +1,6 @@
 {
   "name": "@supabase/react-data-grid",
-  "version": "7.1.0-canary.1",
+  "version": "7.1.0-canary.2",
   "license": "MIT",
   "description": "Excel-like grid component built with React, with editors, keyboard navigation, copy & paste, and the like",
   "keywords": [
