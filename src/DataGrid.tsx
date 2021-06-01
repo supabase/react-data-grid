@@ -48,7 +48,7 @@ import type {
   FillEvent,
   PasteEvent,
   CellNavigationMode,
-  SortDirection,
+  SortColumn,
   RowHeightArgs,
   SelectCellFn
 } from './types';
@@ -124,12 +124,9 @@ export interface DataGridProps<R, SR = unknown, K extends Key = Key> extends Sha
   selectedRows?: ReadonlySet<K> | null;
   /** Function called whenever row selection is changed */
   onSelectedRowsChange?: ((selectedRows: Set<K>) => void) | null;
-  /** The key of the column which is currently being sorted */
-  sortColumn?: string | null;
-  /** The direction to sort the sortColumn*/
-  sortDirection?: SortDirection | null;
-  /** Function called whenever grid is sorted*/
-  onSort?: ((columnKey: string, direction: SortDirection) => void) | null;
+  /**Used for multi column sorting */
+  sortColumns?: readonly Readonly<SortColumn>[] | null;
+  onSortColumnsChange?: ((sortColumns: SortColumn[]) => void) | null;
   defaultColumnOptions?: DefaultColumnOptions<R, SR> | null;
   groupBy?: readonly string[] | null;
   rowGrouper?: ((rows: readonly R[], columnKey: string) => Record<string, readonly R[]>) | null;
@@ -195,9 +192,8 @@ function DataGrid<R, SR, K extends Key>(
     // Feature props
     selectedRows,
     onSelectedRowsChange,
-    sortColumn,
-    sortDirection,
-    onSort,
+    sortColumns,
+    onSortColumnsChange,
     defaultColumnOptions,
     groupBy: rawGroupBy,
     rowGrouper,
@@ -265,6 +261,7 @@ function DataGrid<R, SR, K extends Key>(
    * The identity of the wrapper function is stable so it won't break memoization
    */
   const selectRowWrapper = useLatestFunc(selectRow);
+  const selectAllRowsWrapper = useLatestFunc(selectAllRows);
   const selectCellWrapper = useLatestFunc(selectCell);
   const toggleGroupWrapper = useLatestFunc(toggleGroup);
   const handleFormatterRowChangeWrapper = useLatestFunc(updateRow);
@@ -451,6 +448,24 @@ function DataGrid<R, SR, K extends Key>(
     } else {
       newSelectedRows.delete(rowKey);
       lastSelectedRowIdx.current = -1;
+    }
+
+    onSelectedRowsChange(newSelectedRows);
+  }
+
+  function selectAllRows(checked: boolean) {
+    if (!onSelectedRowsChange) return;
+
+    assertIsValidKeyGetter<R, K>(rowKeyGetter);
+    const newSelectedRows = new Set(selectedRows);
+
+    for (const row of rawRows) {
+      const rowKey = rowKeyGetter(row);
+      if (checked) {
+        newSelectedRows.add(rowKey);
+      } else {
+        newSelectedRows.delete(rowKey);
+      }
     }
 
     onSelectedRowsChange(newSelectedRows);
@@ -1067,16 +1082,13 @@ function DataGrid<R, SR, K extends Key>(
       onScroll={handleScroll}
     >
       <HeaderRow
-        rowKeyGetter={rowKeyGetter}
-        rows={rawRows}
         columns={viewportColumns}
         onColumnResize={handleColumnResize}
         onColumnResized={handleColumnResized}
         allRowsSelected={allRowsSelected}
-        onSelectedRowsChange={onSelectedRowsChange}
-        sortColumn={sortColumn}
-        sortDirection={sortDirection}
-        onSort={onSort}
+        onAllRowsSelectionChange={selectAllRowsWrapper}
+        sortColumns={sortColumns}
+        onSortColumnsChange={onSortColumnsChange}
         lastFrozenColumnIndex={lastFrozenColumnIndex}
       />
       {rows.length === 0 && EmptyRowsRenderer ? (

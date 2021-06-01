@@ -44,10 +44,6 @@ export interface Column<TRow, TSummaryRow = unknown> {
     onCellKeyDown?: ((event: React.KeyboardEvent<HTMLDivElement>) => void) | null;
     /** Control the default cell navigation behavior while the editor is open */
     onNavigation?: ((event: React.KeyboardEvent<HTMLDivElement>) => boolean) | null;
-    // TODO: Do we need these options
-    // editOnDoubleClick?: boolean | null;
-    /** @default false */
-    // commitOnScroll?: boolean | null;
   } | null;
   /** Header renderer for each header cell */
   headerRenderer?: React.ComponentType<HeaderRendererProps<TRow, TSummaryRow>> | null;
@@ -110,9 +106,9 @@ export interface EditorProps<TRow, TSummaryRow = unknown> extends SharedEditorPr
 
 export interface HeaderRendererProps<TRow, TSummaryRow = unknown> {
   column: CalculatedColumn<TRow, TSummaryRow>;
-  sortColumn: string | undefined | null;
-  sortDirection: SortDirection | undefined | null;
-  onSort: ((columnKey: string, direction: SortDirection) => void) | undefined | null;
+  sortDirection: SortDirection | undefined;
+  priority: number | undefined;
+  onSort: (ctrlClick: boolean) => void;
   allRowsSelected: boolean;
   onAllRowsSelectionChange: (checked: boolean) => void;
 }
@@ -161,7 +157,6 @@ export interface RowRendererProps<TRow, TSummaryRow = unknown>
   extends Omit<React.HTMLAttributes<HTMLDivElement>, 'style' | 'children'> {
   viewportColumns: readonly CalculatedColumn<TRow, TSummaryRow>[];
   row: TRow;
-  cellRenderer?: React.ComponentType<CellRendererProps<TRow, TSummaryRow>> | null;
   rowIdx: number;
   copiedCellIdx: number | undefined;
   draggedOverCellIdx: number | undefined;
@@ -225,8 +220,13 @@ export interface GroupRow<TRow> {
   startRowIndex: number;
 }
 
+export interface SortColumn {
+  columnKey: string;
+  direction: SortDirection;
+}
+
 export type CellNavigationMode = 'NONE' | 'CHANGE_ROW' | 'LOOP_OVER_ROW';
-export type SortDirection = 'ASC' | 'DESC' | 'NONE';
+export type SortDirection = 'ASC' | 'DESC';
 
 export type ColSpanArgs<R, SR> =
   | { type: 'HEADER' }

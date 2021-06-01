@@ -1,7 +1,7 @@
 name: CI
 on:
   push:
-    branches: [master, alpha, canary]
+    branches: [main]
   pull_request:
 
 jobs:
