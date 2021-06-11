@@ -173,6 +173,7 @@ export interface RowRendererProps<TRow, TSummaryRow = unknown>
   rowClass: ((row: TRow) => string | undefined | null) | undefined | null;
   setDraggedOverRowIdx: ((overRowIdx: number) => void) | undefined;
   selectCell: SelectCellFn;
+  multiplayerPositions: Position[] | undefined;
 }
 
 export interface RowsChangeData<R, SR = unknown> {

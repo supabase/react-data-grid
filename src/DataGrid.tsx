@@ -167,6 +167,8 @@ export interface DataGridProps<R, SR = unknown, K extends Key = Key> extends Sha
   /** The node where the editor portal should mount. */
   editorPortalTarget?: Element | null;
   rowClass?: ((row: R) => string | undefined | null) | null;
+
+  multiplayerPositions?: Map<number, Position>
 }
 
 /**
@@ -218,6 +220,7 @@ function DataGrid<R, SR, K extends Key>(
     className,
     style,
     rowClass,
+    multiplayerPositions,
     // ARIA
     'aria-label': ariaLabel,
     'aria-labelledby': ariaLabelledBy,
@@ -1036,6 +1039,7 @@ function DataGrid<R, SR, K extends Key>(
           setDraggedOverRowIdx={isDragging ? setDraggedOverRowIdx : undefined}
           lastFrozenColumnIndex={lastFrozenColumnIndex}
           selectedCellProps={getSelectedCellProps(rowIdx)}
+          multiplayerPositions={multiplayerPositions && [...multiplayerPositions.values()].filter(position => position.rowIdx === rowIdx)}
           onRowChange={handleFormatterRowChangeWrapper}
           selectCell={selectCellWrapper}
         />

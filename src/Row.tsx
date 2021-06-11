@@ -28,6 +28,7 @@ function Row<R, SR>(
     height,
     onRowChange,
     selectCell,
+    multiplayerPositions,
     ...props
   }: RowRendererProps<R, SR>,
   ref: React.Ref<HTMLDivElement>
@@ -57,6 +58,7 @@ function Row<R, SR>(
     }
 
     const isCellSelected = selectedCellProps?.idx === column.idx;
+    const isMultiplayerCellSelected = !!multiplayerPositions?.some(position => position.idx === column.idx)
     if (selectedCellProps?.mode === 'EDIT' && isCellSelected) {
       cells.push(
         <EditCell
@@ -80,7 +82,7 @@ function Row<R, SR>(
         row={row}
         isCopied={copiedCellIdx === column.idx}
         isDraggedOver={draggedOverCellIdx === column.idx}
-        isCellSelected={isCellSelected}
+        isCellSelected={isCellSelected || isMultiplayerCellSelected}
         dragHandleProps={
           isCellSelected ? (selectedCellProps as SelectedCellProps).dragHandleProps : undefined
         }
