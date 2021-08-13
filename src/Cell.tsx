@@ -21,25 +21,6 @@ const cellDraggedOver = css`
 
 const cellDraggedOverClassname = `rdg-cell-dragged-over ${cellDraggedOver}`;
 
-const cellDragHandle = css`
-  cursor: move;
-  position: absolute;
-  right: 0;
-  bottom: 0;
-  width: 8px;
-  height: 8px;
-  background-color: var(--selection-color);
-
-  &:hover {
-    width: 16px;
-    height: 16px;
-    border: 2px solid var(--selection-color);
-    background-color: var(--background-color);
-  }
-`;
-
-const cellDragHandleClassname = `rdg-cell-drag-handle ${cellDragHandle}`;
-
 function Cell<R, SR>({
   column,
   colSpan,
@@ -47,9 +28,9 @@ function Cell<R, SR>({
   isCopied,
   isDraggedOver,
   row,
-  rowIdx,
-  dragHandleProps,
+  dragHandle,
   onRowClick,
+  onRowDoubleClick,
   onRowChange,
   selectCell,
   ...props
@@ -65,12 +46,12 @@ function Cell<R, SR>({
   );
 
   function selectCellWrapper(openEditor?: boolean | null) {
-    selectCell({ idx: column.idx, rowIdx }, openEditor);
+    selectCell(row, column, openEditor);
   }
 
   function handleClick() {
     selectCellWrapper(column.editorOptions?.editOnClick);
-    onRowClick?.(rowIdx, row, column);
+    onRowClick?.(row, column);
   }
 
   function handleContextMenu() {
@@ -79,10 +60,7 @@ function Cell<R, SR>({
 
   function handleDoubleClick() {
     selectCellWrapper(true);
-  }
-
-  function handleRowChange(newRow: R) {
-    onRowChange(rowIdx, newRow);
+    onRowDoubleClick?.(row, column);
   }
 
   return (
@@ -103,12 +81,11 @@ function Cell<R, SR>({
         <>
           <column.formatter
             column={column}
-            rowIdx={rowIdx}
             row={row}
             isCellSelected={isCellSelected}
-            onRowChange={handleRowChange}
+            onRowChange={onRowChange}
           />
-          {dragHandleProps && <div className={cellDragHandleClassname} {...dragHandleProps} />}
+          {dragHandle}
         </>
       )}
     </div>

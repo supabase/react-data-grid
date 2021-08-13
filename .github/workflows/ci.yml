@@ -8,20 +8,20 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
-    - uses: actions/setup-node@v2
-      with:
-        node-version: '16.x'
-        check-latest: true
-    - uses: actions/cache@v2
-      with:
-        path: ~/.npm
-        key: npm-${{ hashFiles('package.json') }}
-    - name: npm install
-      run: npm i
-    - name: Typecheck
-      run: npm run typecheck
-    - name: Test
-      run: npm t -- --coverage --colors
-    - name: Bundle
-      run: npm run build
+      - uses: actions/checkout@v2
+      - uses: actions/setup-node@v2
+        with:
+          node-version: '16.x'
+          check-latest: true
+      - uses: actions/cache@v2
+        with:
+          path: ~/.npm
+          key: npm-${{ hashFiles('package.json') }}
+      - name: npm install
+        run: npm i
+      - name: Typecheck
+        run: npm run typecheck
+      - name: Test
+        run: npm t -- --coverage --colors
+      - name: Bundle
+        run: npm run build
