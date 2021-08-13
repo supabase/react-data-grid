@@ -45,11 +45,13 @@ describe('colSpan', () => {
     expect(row1).toHaveLength(14);
     // 7th-8th cells are merged
     expect(row1[6]).toHaveAttribute('aria-colindex', '7');
-    expect(row1[7]).toHaveAttribute('aria-colindex', '9');
+    expect(row1[6]).toHaveAttribute('aria-colspan', '2');
     expect(row1[6]).toHaveStyle({
       'grid-column-start': '7',
       'grid-column-end': 'span 2'
     });
+    expect(row1[7]).toHaveAttribute('aria-colindex', '9');
+    expect(row1[7]).not.toHaveAttribute('aria-colspan');
 
     // 3rd-5th, 7th-8th cells are merged
     const row2 = getCellsAtRowIndex(2);
@@ -59,6 +61,7 @@ describe('colSpan', () => {
       'grid-column-start': '3',
       'grid-column-end': 'span 3'
     });
+    expect(row2[2]).toHaveAttribute('aria-colspan', '3');
     expect(row2[3]).toHaveAttribute('aria-colindex', '6');
     expect(row2[4]).toHaveAttribute('aria-colindex', '7');
     expect(row2[4]).toHaveStyle({
@@ -75,27 +78,27 @@ describe('colSpan', () => {
     setupColSpanGrid();
     userEvent.click(getCellsAtRowIndex(1)[1]);
     validateCellPosition(1, 1);
-    userEvent.type(document.activeElement!, '{arrowright}');
+    userEvent.keyboard('{arrowright}');
     validateCellPosition(2, 1);
-    userEvent.type(document.activeElement!, '{arrowright}');
+    userEvent.keyboard('{arrowright}');
     validateCellPosition(3, 1);
-    userEvent.type(document.activeElement!, '{arrowdown}');
+    userEvent.keyboard('{arrowdown}');
     validateCellPosition(2, 2);
-    userEvent.type(document.activeElement!, '{arrowleft}');
+    userEvent.keyboard('{arrowleft}');
     validateCellPosition(1, 2);
-    userEvent.type(document.activeElement!, '{arrowright}');
+    userEvent.keyboard('{arrowright}');
     validateCellPosition(2, 2);
-    userEvent.type(document.activeElement!, '{arrowright}');
+    userEvent.keyboard('{arrowright}');
     validateCellPosition(5, 2);
-    userEvent.type(document.activeElement!, '{arrowleft}');
+    userEvent.keyboard('{arrowleft}');
     validateCellPosition(2, 2);
-    userEvent.type(document.activeElement!, '{arrowdown}');
+    userEvent.keyboard('{arrowdown}');
     validateCellPosition(2, 3);
-    userEvent.type(document.activeElement!, '{arrowdown}{arrowdown}');
+    userEvent.keyboard('{arrowdown}{arrowdown}');
     validateCellPosition(0, 5);
-    userEvent.type(document.activeElement!, '{arrowLeft}');
+    userEvent.keyboard('{arrowLeft}');
     validateCellPosition(0, 5);
-    userEvent.type(document.activeElement!, '{arrowright}');
+    userEvent.keyboard('{arrowright}');
     validateCellPosition(5, 5);
     userEvent.tab({ shift: true });
     userEvent.tab({ shift: true });

@@ -8,7 +8,7 @@ export * from './domUtils';
 export * from './keyboardUtils';
 export * from './selectedCellUtils';
 
-export const { min, max, floor, ceil, sign } = Math;
+export const { min, max, floor, sign } = Math;
 
 export function assertIsValidKeyGetter<R, K extends React.Key>(
   keyGetter: unknown
@@ -25,7 +25,7 @@ export function getCellStyle<R, SR>(
   return {
     gridColumnStart: column.idx + 1,
     gridColumnEnd: colSpan !== undefined ? `span ${colSpan}` : undefined,
-    left: column.frozen ? `var(--frozen-left-${column.key})` : undefined
+    left: column.frozen ? `var(--frozen-left-${column.idx})` : undefined
   };
 }
 

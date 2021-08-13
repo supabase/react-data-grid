@@ -1,14 +1,15 @@
 import userEvent from '@testing-library/user-event';
 import { fireEvent } from '@testing-library/react';
 import type { Column } from '../src';
-import { setup, getSelectedCell, validateCellPosition } from './utils';
+import { SelectColumn } from '../src';
+import { setup, getSelectedCell, validateCellPosition, getCellsAtRowIndex, getGrid } from './utils';
 
 type Row = undefined;
 
 const rows: readonly Row[] = Array(100);
 
 const columns: readonly Column<Row>[] = [
-  { key: 'col1', name: 'col1' },
+  SelectColumn,
   { key: 'col2', name: 'col2' },
   { key: 'col3', name: 'col3' },
   { key: 'col4', name: 'col4' },
@@ -36,13 +37,13 @@ test('basic keyboard navigation', () => {
   validateCellPosition(0, 0);
 
   // arrow navigation
-  userEvent.type(document.activeElement!, '{arrowdown}');
+  userEvent.keyboard('{arrowdown}');
   validateCellPosition(0, 1);
-  userEvent.type(document.activeElement!, '{arrowright}');
+  userEvent.keyboard('{arrowright}');
   validateCellPosition(1, 1);
-  userEvent.type(document.activeElement!, '{arrowup}');
+  userEvent.keyboard('{arrowup}');
   validateCellPosition(1, 0);
-  userEvent.type(document.activeElement!, '{arrowleft}');
+  userEvent.keyboard('{arrowleft}');
   validateCellPosition(0, 0);
 
   // page {up,down}/home/end navigation
@@ -52,13 +53,13 @@ test('basic keyboard navigation', () => {
   validateCellPosition(0, 58);
   fireEvent.keyDown(document.activeElement!, { key: 'PageUp' });
   validateCellPosition(0, 29);
-  userEvent.type(document.activeElement!, '{end}');
+  userEvent.keyboard('{end}');
   validateCellPosition(6, 29);
-  userEvent.type(document.activeElement!, '{home}');
+  userEvent.keyboard('{home}');
   validateCellPosition(0, 29);
-  userEvent.type(document.activeElement!, '{ctrl}{end}');
+  userEvent.keyboard('{ctrl}{end}');
   validateCellPosition(6, 99);
-  userEvent.type(document.activeElement!, '{ctrl}{home}');
+  userEvent.keyboard('{ctrl}{home}');
   validateCellPosition(0, 0);
 });
 
@@ -70,45 +71,76 @@ test('at-bounds basic keyboard navigation', () => {
   validateCellPosition(0, 0);
 
   // arrow navigation
-  userEvent.type(document.activeElement!, '{arrowup}');
+  userEvent.keyboard('{arrowup}');
   validateCellPosition(0, 0);
-  userEvent.type(document.activeElement!, '{arrowleft}');
+  userEvent.keyboard('{arrowleft}');
   validateCellPosition(0, 0);
-  userEvent.type(document.activeElement!, '{ctrl}{end}');
+  userEvent.keyboard('{ctrl}{end}');
   validateCellPosition(6, 99);
-  userEvent.type(document.activeElement!, '{arrowdown}');
+  userEvent.keyboard('{arrowdown}');
   validateCellPosition(6, 99);
-  userEvent.type(document.activeElement!, '{arrowright}');
+  userEvent.keyboard('{arrowright}');
   validateCellPosition(6, 99);
 
   // page {up,down}/home/end navigation
-  userEvent.type(document.activeElement!, '{end}');
+  userEvent.keyboard('{end}');
   validateCellPosition(6, 99);
-  userEvent.type(document.activeElement!, '{ctrl}{end}');
+  userEvent.keyboard('{ctrl}{end}');
   validateCellPosition(6, 99);
   fireEvent.keyDown(document.activeElement!, { key: 'PageDown' });
   validateCellPosition(6, 99);
-  userEvent.type(document.activeElement!, '{ctrl}{home}');
+  userEvent.keyboard('{ctrl}{home}');
   validateCellPosition(0, 0);
-  userEvent.type(document.activeElement!, '{home}');
+  validateCheckboxHasFocus();
+  userEvent.keyboard('{home}');
+  validateCheckboxHasFocus();
   validateCellPosition(0, 0);
-  userEvent.type(document.activeElement!, '{ctrl}{home}');
+  userEvent.keyboard('{ctrl}{home}');
+  validateCheckboxHasFocus();
   validateCellPosition(0, 0);
   fireEvent.keyDown(document.activeElement!, { key: 'PageUp' });
   validateCellPosition(0, 0);
 
   // shift+tab tabs out of the grid
   userEvent.tab({ shift: true });
+  // TODO: remove when focus and selection are separated
+  // focusSink recieves focus and we need to press shift tab again to exit the grid
+  userEvent.tab({ shift: true });
   expect(document.body).toHaveFocus();
 
   // tab at the end of a row selects the first cell on the next row
   userEvent.tab();
-  userEvent.type(document.activeElement!, '{end}');
+  userEvent.keyboard('{end}');
   userEvent.tab();
   validateCellPosition(0, 1);
 
   // tab at the end of the grid tabs out of the grid
-  userEvent.type(document.activeElement!, '{ctrl}{end}');
+  userEvent.keyboard('{ctrl}{end}');
   userEvent.tab();
   expect(document.body).toHaveFocus();
 });
+
+test('navigation when selected cell not in the viewport', () => {
+  setup({ columns, rows });
+
+  // tab into the grid
+  userEvent.tab();
+
+  // TODO: this does not work with formatters that sets the focus
+  userEvent.tab();
+  validateCellPosition(1, 0);
+
+  const grid = getGrid();
+  const queryFirstRow = () => document.querySelector<HTMLDivElement>(`[aria-rowindex="2"]`);
+  const rowHeight = 35;
+  expect(queryFirstRow()).toBeInTheDocument();
+  grid.scrollTop = rowHeight + rowHeight * 100 - 1080;
+  expect(queryFirstRow()).not.toBeInTheDocument();
+
+  userEvent.keyboard('{arrowdown}');
+  validateCellPosition(1, 1);
+});
+
+function validateCheckboxHasFocus() {
+  expect(getCellsAtRowIndex(0)[0].querySelector('input')).toHaveFocus();
+}
