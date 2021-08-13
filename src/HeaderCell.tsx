@@ -46,7 +46,7 @@ export default function HeaderCell<R, SR>({
       return;
     }
     
-    const { currentTarget } = event;
+    const { currentTarget, pointerId } = event;
     const { right } = currentTarget.getBoundingClientRect();
     const offset = right - event.clientX;
 
@@ -56,20 +56,22 @@ export default function HeaderCell<R, SR>({
     }
 
     function onPointerMove(event: PointerEvent) {
+      if (event.pointerId !== pointerId) return;
       if (event.pointerType === 'mouse' && event.buttons !== 1) {
         onPointerUp(event);
         return;
       }
-      const width = event.clientX - currentTarget.getBoundingClientRect().left;
+      const width = event.clientX + offset - currentTarget.getBoundingClientRect().left;
       if (width > 0) {
         onResize(column, width);
       }
     }
 
     function onPointerUp(event: PointerEvent) {
+      if (event.pointerId !== pointerId) return;
       window.removeEventListener('pointermove', onPointerMove);
       window.removeEventListener('pointerup', onPointerUp);
-      const width = event.clientX - currentTarget.getBoundingClientRect().left;
+      const width = event.clientX + offset - currentTarget.getBoundingClientRect().left;
       onResized(column, width);
     }
 
