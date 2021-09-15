@@ -3,7 +3,6 @@
 [![npm-badge]][npm-url]
 [![type-badge]][npm-url]
 [![size-badge]][size-url]
-[![codecov-badge]][codecov-url]
 [![ci-badge]][ci-url]
 
 [npm-badge]: https://img.shields.io/npm/v/@supabase/react-data-grid
