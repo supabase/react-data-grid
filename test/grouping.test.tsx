@@ -1,7 +1,7 @@
 import { StrictMode, useState } from 'react';
 import { groupBy as rowGrouper } from 'lodash';
 import type { Column } from '../src';
-import DataGrid, { SelectColumn } from '../src';
+import DataGrid, { SelectColumn, TextEditor } from '../src';
 import { render, screen, within } from '@testing-library/react';
 import {
   getGrid,
@@ -10,10 +10,15 @@ import {
   queryTreeGrid,
   getTreeGrid,
   getHeaderCells,
-  getCellsAtRowIndex
+  getCellsAtRowIndex,
+  getSelectedCell,
+  copySelectedCell,
+  pasteSelectedCell
 } from './utils';
 import userEvent from '@testing-library/user-event';
-import type { Position } from '../src/types';
+import type { FillEvent, PasteEvent } from '../src/types';
+
+const rowSelectedClassname = 'rdg-row-selected';
 
 interface Row {
   id: number;
@@ -29,15 +34,27 @@ const columns: readonly Column<Row>[] = [
   },
   {
     key: 'country',
-    name: 'Country'
+    name: 'Country',
+    editor: TextEditor
   },
   {
     key: 'year',
     name: 'Year'
+  },
+  {
+    key: 'id',
+    name: 'Id',
+    formatter(props) {
+      function onClick() {
+        props.onRowChange({ ...props.row, id: props.row.id + 10 });
+      }
+
+      return <button onClick={onClick}>value: {props.row.id}</button>;
+    }
   }
 ];
 
-const rows: readonly Row[] = [
+const initialRows: readonly Row[] = [
   {
     id: 1,
     country: 'USA',
@@ -64,29 +81,39 @@ function rowKeyGetter(row: Row) {
   return row.id;
 }
 
-function TestGrid({ groupBy }: { groupBy?: string[] }) {
+function TestGrid({ groupBy }: { groupBy: string[] | undefined }) {
+  const [rows, setRows] = useState(initialRows);
   const [selectedRows, setSelectedRows] = useState<ReadonlySet<number>>(() => new Set());
   const [expandedGroupIds, setExpandedGroupIds] = useState<ReadonlySet<unknown>>(
     () => new Set<unknown>([])
   );
-  const [selectedPosition, setSelectedPosition] = useState<Position | null>(null);
+
+  function onFill(event: FillEvent<Row>) {
+    return event.targetRow;
+  }
+
+  function onPaste(event: PasteEvent<Row>) {
+    return {
+      ...event.targetRow,
+      [event.targetColumnKey]: event.sourceRow[event.sourceColumnKey as keyof Row]
+    };
+  }
 
   return (
-    <>
-      <DataGrid
-        columns={columns}
-        rows={rows}
-        rowKeyGetter={rowKeyGetter}
-        groupBy={groupBy}
-        rowGrouper={rowGrouper}
-        onSelectedCellChange={setSelectedPosition}
-        selectedRows={selectedRows}
-        onSelectedRowsChange={setSelectedRows}
-        expandedGroupIds={expandedGroupIds}
-        onExpandedGroupIdsChange={setExpandedGroupIds}
-      />
-      <div data-testid="selectedPosition">{JSON.stringify(selectedPosition)}</div>
-    </>
+    <DataGrid
+      columns={columns}
+      rows={rows}
+      rowKeyGetter={rowKeyGetter}
+      groupBy={groupBy}
+      rowGrouper={rowGrouper}
+      selectedRows={selectedRows}
+      onSelectedRowsChange={setSelectedRows}
+      expandedGroupIds={expandedGroupIds}
+      onExpandedGroupIdsChange={setExpandedGroupIds}
+      onRowsChange={setRows}
+      onFill={onFill}
+      onPaste={onPaste}
+    />
   );
 }
 
@@ -106,7 +133,7 @@ test('should not group if groupBy is not specified', () => {
   setup();
   expect(queryTreeGrid()).not.toBeInTheDocument();
   expect(getGrid()).toHaveAttribute('aria-rowcount', '5');
-  expect(getHeaderCellsContent()).toStrictEqual(['', 'Sport', 'Country', 'Year']);
+  expect(getHeaderCellsContent()).toStrictEqual(['', 'Sport', 'Country', 'Year', 'Id']);
   expect(getRows()).toHaveLength(4);
 });
 
@@ -120,14 +147,14 @@ test('should group by single column', () => {
   setup(['country']);
   expect(queryGrid()).not.toBeInTheDocument();
   expect(getTreeGrid()).toHaveAttribute('aria-rowcount', '7');
-  expect(getHeaderCellsContent()).toStrictEqual(['', 'Country', 'Sport', 'Year']);
+  expect(getHeaderCellsContent()).toStrictEqual(['', 'Country', 'Sport', 'Year', 'Id']);
   expect(getRows()).toHaveLength(2);
 });
 
 test('should group by multiple columns', () => {
   setup(['country', 'year']);
   expect(getTreeGrid()).toHaveAttribute('aria-rowcount', '11');
-  expect(getHeaderCellsContent()).toStrictEqual(['', 'Country', 'Year', 'Sport']);
+  expect(getHeaderCellsContent()).toStrictEqual(['', 'Country', 'Year', 'Sport', 'Id']);
   expect(getRows()).toHaveLength(2);
 });
 
@@ -140,7 +167,7 @@ test('should ignore duplicate groupBy columns', () => {
 test('should use groupBy order while grouping', () => {
   setup(['year', 'country']);
   expect(getTreeGrid()).toHaveAttribute('aria-rowcount', '12');
-  expect(getHeaderCellsContent()).toStrictEqual(['', 'Year', 'Country', 'Sport']);
+  expect(getHeaderCellsContent()).toStrictEqual(['', 'Year', 'Country', 'Sport', 'Id']);
   expect(getRows()).toHaveLength(3);
 });
 
@@ -161,10 +188,8 @@ test('should toggle group using keyboard', () => {
   userEvent.click(groupCell);
   expect(getRows()).toHaveLength(5);
   // clicking on the group cell selects the row
-  expect(JSON.parse(screen.getByTestId('selectedPosition').textContent!)).toStrictEqual({
-    rowIdx: 1,
-    idx: -1
-  });
+  expect(getSelectedCell()).toBeNull();
+  expect(getRows()[1]).toHaveClass(rowSelectedClassname);
   userEvent.keyboard('{arrowright}{arrowright}{enter}');
   expect(getRows()).toHaveLength(3);
   userEvent.keyboard('{enter}');
@@ -234,9 +259,16 @@ test('should select rows in a group', () => {
   expect(selectedRows[0]).toHaveAttribute('aria-rowindex', '6');
 
   // select child group
-  userEvent.click(within(groupCell2.parentElement!).getByLabelText('Select Group'));
+  const checkbox = within(groupCell2.parentElement!).getByLabelText('Select Group');
+  userEvent.click(checkbox);
   selectedRows = screen.getAllByRole('row', { selected: true });
   expect(selectedRows).toHaveLength(4);
+
+  // unselect child group
+  userEvent.click(checkbox);
+  selectedRows = screen.getAllByRole('row', { selected: true });
+  // eslint-disable-next-line jest-dom/prefer-in-document
+  expect(selectedRows).toHaveLength(1);
 });
 
 test('cell navigation in a treegrid', () => {
@@ -245,13 +277,21 @@ test('cell navigation in a treegrid', () => {
 
   // expand group
   const groupCell1 = screen.getByRole('gridcell', { name: 'USA' });
+  expect(document.body).toHaveFocus();
+  expect(getRows()[0]).toHaveAttribute('tabIndex', '-1');
   userEvent.click(groupCell1);
+  expect(getRows()[0]).toHaveFocus();
+  expect(getRows()[0]).toHaveAttribute('tabIndex', '0');
   const groupCell2 = screen.getByRole('gridcell', { name: '2021' });
   userEvent.click(groupCell2);
+  expect(getRows()[0]).toHaveAttribute('tabIndex', '-1');
+  expect(getRows()[2]).toHaveFocus();
+  expect(getRows()[2]).toHaveAttribute('tabIndex', '0');
 
   // select cell
   userEvent.click(getCellsAtRowIndex(4)[1]);
   expect(getCellsAtRowIndex(4)[1]).toHaveAttribute('aria-selected', 'true');
+  expect(getRows()[2]).toHaveAttribute('tabIndex', '-1');
 
   // select the previous cell
   userEvent.keyboard('{arrowleft}');
@@ -261,10 +301,8 @@ test('cell navigation in a treegrid', () => {
   // if the first cell is selected then arrowleft should select the row
   userEvent.keyboard('{arrowleft}');
   expect(getCellsAtRowIndex(4)[0]).toHaveAttribute('aria-selected', 'false');
-  expect(JSON.parse(screen.getByTestId('selectedPosition').textContent!)).toStrictEqual({
-    rowIdx: 3,
-    idx: -1
-  });
+  expect(getRows()[3]).toHaveClass(rowSelectedClassname);
+  expect(getRows()[3]).toHaveFocus();
 
   // if the row is selected then arrowright should select the first cell on the same row
   userEvent.keyboard('{arrowright}');
@@ -283,14 +321,47 @@ test('cell navigation in a treegrid', () => {
   expect(getRows()).toHaveLength(5);
 
   // left arrow on a collapsed group should select the parent group
+  expect(getRows()[0]).not.toHaveClass(rowSelectedClassname);
   userEvent.keyboard('{arrowleft}{arrowleft}');
-  expect(JSON.parse(screen.getByTestId('selectedPosition').textContent!)).toStrictEqual({
-    rowIdx: 0,
-    idx: -1
-  });
+  expect(getRows()[0]).toHaveClass(rowSelectedClassname);
+
+  userEvent.keyboard('{end}');
+  expect(getRows()[3]).toHaveClass(rowSelectedClassname);
+
+  userEvent.keyboard('{home}');
+  expect(getRows()[0]).toHaveClass(rowSelectedClassname);
 
   // collpase parent group
   userEvent.keyboard('{arrowleft}');
   expect(screen.queryByRole('gridcell', { name: '2021' })).not.toBeInTheDocument();
   expect(getRows()).toHaveLength(2);
+});
+
+test('onFill is not supported when grouping is enabled', () => {
+  setup(['year']);
+  userEvent.click(screen.getByRole('gridcell', { name: '2021' }));
+  userEvent.click(screen.getByRole('gridcell', { name: 'USA' }));
+  expect(document.querySelector('.rdg-cell-drag-handle')).not.toBeInTheDocument();
+});
+
+test('copy/paste when grouping is enabled', () => {
+  setup(['year']);
+  userEvent.click(screen.getByRole('gridcell', { name: '2021' }));
+  userEvent.click(screen.getByRole('gridcell', { name: 'USA' }));
+  copySelectedCell();
+  expect(getSelectedCell()).toHaveClass('rdg-cell-copied');
+  userEvent.keyboard('{arrowdown}');
+  expect(getSelectedCell()).toHaveTextContent('Canada');
+  pasteSelectedCell();
+  expect(getSelectedCell()).toHaveTextContent('USA');
+});
+
+test('update row using formatter', () => {
+  setup(['year']);
+  userEvent.click(screen.getByRole('gridcell', { name: '2021' }));
+  userEvent.click(screen.getByRole('gridcell', { name: 'USA' }));
+  userEvent.keyboard('{arrowright}{arrowright}');
+  expect(getSelectedCell()).toHaveTextContent('value: 2');
+  userEvent.click(screen.getByText('value: 2'));
+  expect(getSelectedCell()).toHaveTextContent('value: 12');
 });

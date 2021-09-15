@@ -1,5 +1,5 @@
 import { StrictMode } from 'react';
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import DataGrid from '../src/';
 import type { DataGridProps } from '../src/';
 
@@ -58,7 +58,10 @@ export function queryHeaderCells() {
 }
 
 export function getSelectedCell() {
-  return screen.queryByRole('gridcell', { selected: true });
+  return (
+    screen.queryByRole('gridcell', { selected: true }) ??
+    screen.queryByRole('columnheader', { selected: true })
+  );
 }
 
 export function validateCellPosition(columnIdx: number, rowIdx: number) {
@@ -67,5 +70,19 @@ export function validateCellPosition(columnIdx: number, rowIdx: number) {
     throw new Error('Selected cell not found');
   }
   expect(cell).toHaveAttribute('aria-colindex', `${columnIdx + 1}`);
-  expect(cell.parentNode).toHaveAttribute('aria-rowindex', `${rowIdx + 2}`);
+  expect(cell.parentNode).toHaveAttribute('aria-rowindex', `${rowIdx + 1}`);
+}
+
+export function copySelectedCell() {
+  fireEvent.keyDown(document.activeElement!, {
+    keyCode: '67',
+    ctrlKey: true
+  });
+}
+
+export function pasteSelectedCell() {
+  fireEvent.keyDown(document.activeElement!, {
+    keyCode: '86',
+    ctrlKey: true
+  });
 }
