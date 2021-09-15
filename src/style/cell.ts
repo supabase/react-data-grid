@@ -12,6 +12,7 @@ export const cell = css`
   overflow: hidden;
   overflow: clip;
   text-overflow: ellipsis;
+  outline: none;
 
   &[aria-selected='true'] {
     box-shadow: inset 0 0 0 2px var(--selection-color);
@@ -22,7 +23,7 @@ export const cellClassname = `rdg-cell ${cell}`;
 
 const cellFrozen = css`
   position: sticky;
-  // Should have a higher value than 0 to show up above unfrozen cells
+  /* Should have a higher value than 0 to show up above unfrozen cells */
   z-index: 1;
 `;
 

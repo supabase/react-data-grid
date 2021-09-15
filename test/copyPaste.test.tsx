@@ -3,20 +3,23 @@ import userEvent from '@testing-library/user-event';
 
 import DataGrid from '../src';
 import type { Column, PasteEvent } from '../src';
-import { fireEvent, render } from '@testing-library/react';
-import { getCellsAtRowIndex, getSelectedCell } from './utils';
+import { render } from '@testing-library/react';
+import { getCellsAtRowIndex, getSelectedCell, copySelectedCell, pasteSelectedCell } from './utils';
 
 interface Row {
   col: string;
 }
 
-const columns: readonly Column<Row>[] = [
+const columns: readonly Column<Row, Row>[] = [
   {
     key: 'col',
     name: 'Col',
     editable: (row) => row.col !== 'a3',
     editor() {
       return null;
+    },
+    summaryFormatter({ row }) {
+      return <>{row.col}</>;
     }
   }
 ];
@@ -33,12 +36,20 @@ const initialRows: readonly Row[] = [
   }
 ];
 
+const summaryRows: readonly Row[] = [
+  {
+    col: 's1'
+  }
+];
+
 const copyCellClassName = 'rdg-cell-copied';
+const onPasteSpy = jest.fn();
 
 function CopyPasteTest({ allowCopyPaste = true }: { allowCopyPaste?: boolean }) {
   const [rows, setRows] = useState(initialRows);
 
   function onPaste({ sourceColumnKey, sourceRow, targetColumnKey, targetRow }: PasteEvent<Row>) {
+    onPasteSpy();
     return { ...targetRow, [targetColumnKey]: sourceRow[sourceColumnKey as keyof Row] };
   }
 
@@ -46,6 +57,7 @@ function CopyPasteTest({ allowCopyPaste = true }: { allowCopyPaste?: boolean }) 
     <DataGrid
       columns={columns}
       rows={rows}
+      summaryRows={summaryRows}
       onRowsChange={setRows}
       onPaste={allowCopyPaste ? onPaste : undefined}
     />
@@ -53,25 +65,12 @@ function CopyPasteTest({ allowCopyPaste = true }: { allowCopyPaste?: boolean }) 
 }
 
 function setup(allowCopyPaste = true) {
+  onPasteSpy.mockReset();
   render(
     <StrictMode>
       <CopyPasteTest allowCopyPaste={allowCopyPaste} />
     </StrictMode>
   );
-}
-
-function copySelectedCell() {
-  fireEvent.keyDown(document.activeElement!, {
-    keyCode: '67',
-    ctrlKey: true
-  });
-}
-
-function pasteSelectedCell() {
-  fireEvent.keyDown(document.activeElement!, {
-    keyCode: '86',
-    ctrlKey: true
-  });
 }
 
 test('should not allow copy/paste if onPaste is undefined', () => {
@@ -92,6 +91,7 @@ test('should allow copy/paste if onPaste is specified', () => {
   userEvent.keyboard('{arrowdown}');
   pasteSelectedCell();
   expect(getCellsAtRowIndex(1)[0]).toHaveTextContent('a1');
+  expect(onPasteSpy).toHaveBeenCalledTimes(1);
 });
 
 test('should not allow paste on readonly cells', () => {
@@ -124,4 +124,36 @@ test('should cancel copy/paste on escape', () => {
   userEvent.keyboard('{arrowdown}');
   pasteSelectedCell();
   expect(getCellsAtRowIndex(1)[0]).toHaveTextContent('a2');
+});
+
+test('should not allow copy on header or summary cells', () => {
+  setup();
+  userEvent.tab();
+  copySelectedCell();
+  expect(getSelectedCell()).not.toHaveClass(copyCellClassName);
+  userEvent.keyboard('{arrowdown}');
+  pasteSelectedCell();
+  expect(getSelectedCell()).toHaveTextContent('a1');
+  expect(onPasteSpy).not.toHaveBeenCalled();
+  userEvent.keyboard('{ctrl}{end}');
+  copySelectedCell();
+  expect(getSelectedCell()).not.toHaveClass(copyCellClassName);
+  userEvent.keyboard('{arrowup}');
+  pasteSelectedCell();
+  expect(getSelectedCell()).toHaveTextContent('a3');
+  expect(onPasteSpy).not.toHaveBeenCalled();
+});
+
+test('should not allow paste on header or summary cells', () => {
+  setup();
+  userEvent.click(getCellsAtRowIndex(0)[0]);
+  copySelectedCell();
+  userEvent.keyboard('{arrowup}');
+  pasteSelectedCell();
+  expect(getSelectedCell()).toHaveTextContent('Col');
+  expect(onPasteSpy).not.toHaveBeenCalled();
+  userEvent.keyboard('{ctrl}{end}');
+  pasteSelectedCell();
+  expect(getSelectedCell()).toHaveTextContent('s1');
+  expect(onPasteSpy).not.toHaveBeenCalled();
 });

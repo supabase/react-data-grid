@@ -4,8 +4,11 @@ import type { CalculatedColumn, SortColumn } from './types';
 import type { HeaderRowProps } from './HeaderRow';
 import SortableHeaderCell from './headerCells/SortableHeaderCell';
 import { getCellStyle, getCellClassname } from './utils';
+import { useRovingCellRef } from './hooks';
 
 const cellResizable = css`
+  touch-action: none;
+
   &::after {
     content: '';
     cursor: col-resize;
@@ -21,31 +24,53 @@ const cellResizableClassname = `rdg-cell-resizable ${cellResizable}`;
 
 type SharedHeaderRowProps<R, SR> = Pick<
   HeaderRowProps<R, SR, React.Key>,
-  'onSortColumnsChange' | 'allRowsSelected' | 'onAllRowsSelectionChange' | 'sortColumns'
+  | 'sortColumns'
+  | 'onSortColumnsChange'
+  | 'allRowsSelected'
+  | 'onAllRowsSelectionChange'
+  | 'selectCell'
+  | 'onColumnResize'
+  | 'onColumnResized'
+  | 'shouldFocusGrid'
 >;
 
 export interface HeaderCellProps<R, SR> extends SharedHeaderRowProps<R, SR> {
   column: CalculatedColumn<R, SR>;
   colSpan: number | undefined;
-  onResize: (column: CalculatedColumn<R, SR>, width: number) => void;
-  onResized: (column: CalculatedColumn<R, SR>, width: number) => void;
+  isCellSelected: boolean;
 }
 
 export default function HeaderCell<R, SR>({
   column,
   colSpan,
-  onResize,
-  onResized,
+  isCellSelected,
+  onColumnResize,
+  onColumnResized,
   allRowsSelected,
   onAllRowsSelectionChange,
   sortColumns,
-  onSortColumnsChange
+  onSortColumnsChange,
+  selectCell,
+  shouldFocusGrid
 }: HeaderCellProps<R, SR>) {
+  const { ref, tabIndex, onFocus } = useRovingCellRef(isCellSelected);
+  const sortIndex = sortColumns?.findIndex((sort) => sort.columnKey === column.key);
+  const sortColumn =
+    sortIndex !== undefined && sortIndex > -1 ? sortColumns![sortIndex] : undefined;
+  const sortDirection = sortColumn?.direction;
+  const priority = sortColumn !== undefined && sortColumns!.length > 1 ? sortIndex! + 1 : undefined;
+  const ariaSort =
+    sortDirection && !priority ? (sortDirection === 'ASC' ? 'ascending' : 'descending') : undefined;
+
+  const className = getCellClassname(column, column.headerCellClass, {
+    [cellResizableClassname]: column.resizable
+  });
+
   function onPointerDown(event: React.PointerEvent<HTMLDivElement>) {
     if (event.pointerType === 'mouse' && event.buttons !== 1) {
       return;
     }
-    
+
     const { currentTarget, pointerId } = event;
     const { right } = currentTarget.getBoundingClientRect();
     const offset = right - event.clientX;
@@ -56,38 +81,25 @@ export default function HeaderCell<R, SR>({
     }
 
     function onPointerMove(event: PointerEvent) {
-      if (event.pointerId !== pointerId) return;
-      if (event.pointerType === 'mouse' && event.buttons !== 1) {
-        onPointerUp(event);
-        return;
-      }
       const width = event.clientX + offset - currentTarget.getBoundingClientRect().left;
       if (width > 0) {
-        onResize(column, width);
+        onColumnResize(column, width);
       }
     }
 
-    function onPointerUp(event: PointerEvent) {
-      if (event.pointerId !== pointerId) return;
-      window.removeEventListener('pointermove', onPointerMove);
-      window.removeEventListener('pointerup', onPointerUp);
+    function onLostPointerCapture() {
+      currentTarget.removeEventListener('pointermove', onPointerMove);
+      currentTarget.removeEventListener('lostpointercapture', onLostPointerCapture);
       const width = event.clientX + offset - currentTarget.getBoundingClientRect().left;
-      onResized(column, width);
+      onColumnResized(column, width);
     }
 
-    event.preventDefault();
-    window.addEventListener('pointermove', onPointerMove);
-    window.addEventListener('pointerup', onPointerUp);
+    currentTarget.setPointerCapture(pointerId);
+    currentTarget.addEventListener('pointermove', onPointerMove);
+    currentTarget.addEventListener('lostpointercapture', onLostPointerCapture);
   }
-  const sortIndex = sortColumns?.findIndex((sort) => sort.columnKey === column.key);
-  const sortColumn =
-    sortIndex !== undefined && sortIndex > -1 ? sortColumns![sortIndex] : undefined;
-  const sortDirection = sortColumn?.direction;
-  const priority = sortColumn !== undefined && sortColumns!.length > 1 ? sortIndex! + 1 : undefined;
-  const ariaSort =
-    sortDirection && !priority ? (sortDirection === 'ASC' ? 'ascending' : 'descending') : undefined;
 
-  const onSort = (ctrlClick: boolean) => {
+  function onSort(ctrlClick: boolean) {
     if (onSortColumnsChange == null) return;
     const { sortDescendingFirst } = column;
     if (sortColumn === undefined) {
@@ -122,7 +134,19 @@ export default function HeaderCell<R, SR>({
         onSortColumnsChange(nextSortColumn ? [nextSortColumn] : []);
       }
     }
-  };
+  }
+
+  function onClick() {
+    selectCell(column.idx);
+  }
+
+  function handleFocus(event: React.FocusEvent<HTMLDivElement>) {
+    onFocus(event);
+    if (shouldFocusGrid) {
+      // Select the first header cell if there is no selected cell
+      selectCell(0);
+    }
+  }
 
   function getCell() {
     if (column.headerRenderer) {
@@ -134,13 +158,19 @@ export default function HeaderCell<R, SR>({
           onSort={onSort}
           allRowsSelected={allRowsSelected}
           onAllRowsSelectionChange={onAllRowsSelectionChange}
+          isCellSelected={isCellSelected}
         />
       );
     }
 
     if (column.sortable) {
       return (
-        <SortableHeaderCell onSort={onSort} sortDirection={sortDirection} priority={priority}>
+        <SortableHeaderCell
+          onSort={onSort}
+          sortDirection={sortDirection}
+          priority={priority}
+          isCellSelected={isCellSelected}
+        >
           {column.name}
         </SortableHeaderCell>
       );
@@ -149,18 +179,20 @@ export default function HeaderCell<R, SR>({
     return column.name;
   }
 
-  const className = getCellClassname(column, column.headerCellClass, {
-    [cellResizableClassname]: column.resizable
-  });
-
   return (
     <div
       role="columnheader"
       aria-colindex={column.idx + 1}
+      aria-selected={isCellSelected}
       aria-sort={ariaSort}
       aria-colspan={colSpan}
+      ref={ref}
+      // set the tabIndex to 0 when there is no selected cell so grid can receive focus
+      tabIndex={shouldFocusGrid ? 0 : tabIndex}
       className={className}
       style={getCellStyle(column, colSpan)}
+      onFocus={handleFocus}
+      onClick={onClick}
       onPointerDown={column.resizable ? onPointerDown : undefined}
     >
       {getCell()}
