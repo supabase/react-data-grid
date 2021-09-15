@@ -74,6 +74,7 @@ export default function HeaderCell<R, SR>({
     const { currentTarget, pointerId } = event;
     const { right } = currentTarget.getBoundingClientRect();
     const offset = right - event.clientX;
+    let latestWidth = event.clientX + offset - currentTarget.getBoundingClientRect().left;
 
     if (offset > 11) {
       // +1px to account for the border size
@@ -83,6 +84,7 @@ export default function HeaderCell<R, SR>({
     function onPointerMove(event: PointerEvent) {
       const width = event.clientX + offset - currentTarget.getBoundingClientRect().left;
       if (width > 0) {
+        latestWidth = width;
         onColumnResize(column, width);
       }
     }
@@ -90,8 +92,7 @@ export default function HeaderCell<R, SR>({
     function onLostPointerCapture() {
       currentTarget.removeEventListener('pointermove', onPointerMove);
       currentTarget.removeEventListener('lostpointercapture', onLostPointerCapture);
-      const width = event.clientX + offset - currentTarget.getBoundingClientRect().left;
-      onColumnResized(column, width);
+      onColumnResized(column, latestWidth);
     }
 
     currentTarget.setPointerCapture(pointerId);
