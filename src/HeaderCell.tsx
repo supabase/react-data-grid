@@ -8,7 +8,6 @@ import { useRovingCellRef } from './hooks';
 
 const cellResizable = css`
   touch-action: none;
-
   &::after {
     content: '';
     cursor: col-resize;
@@ -30,7 +29,6 @@ type SharedHeaderRowProps<R, SR> = Pick<
   | 'onAllRowsSelectionChange'
   | 'selectCell'
   | 'onColumnResize'
-  | 'onColumnResized'
   | 'shouldFocusGrid'
 >;
 
@@ -45,7 +43,6 @@ export default function HeaderCell<R, SR>({
   colSpan,
   isCellSelected,
   onColumnResize,
-  onColumnResized,
   allRowsSelected,
   onAllRowsSelectionChange,
   sortColumns,
@@ -74,7 +71,6 @@ export default function HeaderCell<R, SR>({
     const { currentTarget, pointerId } = event;
     const { right } = currentTarget.getBoundingClientRect();
     const offset = right - event.clientX;
-    let latestWidth = event.clientX + offset - currentTarget.getBoundingClientRect().left;
 
     if (offset > 11) {
       // +1px to account for the border size
@@ -84,7 +80,6 @@ export default function HeaderCell<R, SR>({
     function onPointerMove(event: PointerEvent) {
       const width = event.clientX + offset - currentTarget.getBoundingClientRect().left;
       if (width > 0) {
-        latestWidth = width;
         onColumnResize(column, width);
       }
     }
@@ -92,7 +87,6 @@ export default function HeaderCell<R, SR>({
     function onLostPointerCapture() {
       currentTarget.removeEventListener('pointermove', onPointerMove);
       currentTarget.removeEventListener('lostpointercapture', onLostPointerCapture);
-      onColumnResized(column, latestWidth);
     }
 
     currentTarget.setPointerCapture(pointerId);

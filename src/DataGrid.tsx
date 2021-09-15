@@ -145,8 +145,6 @@ export interface DataGridProps<R, SR = unknown, K extends Key = Key> extends Sha
   onScroll?: Maybe<(event: React.UIEvent<HTMLDivElement>) => void>;
   /** Called when a column is resized */
   onColumnResize?: Maybe<(idx: number, width: number) => void>;
-  /** Called when column resizing is done */
-  onColumnResized?: (idx: number, width: number) => void;
   /** Function called whenever selected cell is changed */
   onSelectedCellChange?: Maybe<(position: Position) => void>;
 
@@ -202,7 +200,6 @@ function DataGrid<R, SR, K extends Key>(
     onRowDoubleClick,
     onScroll,
     onColumnResize,
-    onColumnResized,
     onSelectedCellChange,
     onFill,
     onPaste,
@@ -409,13 +406,6 @@ function DataGrid<R, SR, K extends Key>(
       onColumnResize?.(column.idx, width);
     },
     [onColumnResize]
-  );
-
-  const handleColumnResized = useCallback(
-    (column: CalculatedColumn<R, SR>, width: number) => {
-      onColumnResized?.(column.idx, width);
-    },
-    [onColumnResized]
   );
 
   const setDraggedOverRowIdx = useCallback((rowIdx?: number) => {
@@ -1110,7 +1100,6 @@ function DataGrid<R, SR, K extends Key>(
       <HeaderRow
         columns={viewportColumns}
         onColumnResize={handleColumnResize}
-        onColumnResized={handleColumnResized}
         allRowsSelected={allRowsSelected}
         onAllRowsSelectionChange={selectAllRowsLatest}
         sortColumns={sortColumns}
